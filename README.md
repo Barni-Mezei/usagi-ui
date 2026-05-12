@@ -4,6 +4,9 @@ using a flexbox like layout system. It has
 
 Made with (and for) the [Usagi](https://github.com/brettchalupa/usagi) engine
 
+## **IMPORTANT**
+This documentation might be lacking some information about the functions and methods in the library. If you can't find something, take a look at the function in the `ui.lua` file, because that has all of it's functions documented.
+
 # Using the libraray
 
 For the libraray to work, you only need the `lib/ui.lua` file. After obtaining it, you cna use
@@ -56,13 +59,12 @@ end
 There are 4 ui items available at the moment:
 - `UI.Box`: This is the base of all ui items. It has a position, a size, and margins. It also has some special settings like, min and max allowed size.
 - `UI.Panel`: It is a kind of container, it acts as a root item. You don't need to create these yourself, they will be automatically generated when creating a new panel
-- `UI.Label`: This is an instance of the box, but it has a single line of text inside. You can set the vertical and horizontal aligmnet of the text.
+- `UI.Label`: This is an instance of the box, but it has some text inside. You can set the vertical and horizontal aligmnet of the text.
 - `UI.List`: This container allows you to make complex ui layouts. It has parameters for controlling the positioning of it's children, on one axis
 
 Planned items:
 - `UI.Image`: Display a sprite inside a box
 - `UI.Button`: A clickable image
-- `UI.Textarea`: A label, that supports displaying multiline strings
 
 # Creating a layout
 
@@ -146,7 +148,7 @@ This is aessentially is just a box, with a single line of text in it. The positi
 
 Everything from `UI.Box` and some more:
 
-- `text` (**string**) The text to display inside (must be a single line)
+- `text` (**string**) The text to display inside
 - `value_hook` (**string**)  A reference to an entry in the `value_hooks` table. Modifying that table, the text in the lael will be updated to the new value
 - `h_align` (**integer**) The horizontal alignment of the text inside the box (-1: left, 0: center, 1: right)
 - `v_align` (**integer**) The vertical alignment of the text inside the box   (-1: top,  0: center, 1: bottom)
@@ -198,7 +200,7 @@ local box = ui.create_box(0, 0, 16, 32)
 ## `create_label()`
 
 ### Arguments
-- `text` (**string**): The text to display in the middle of this label. **The text must be one line!** (So it can not contain `\n` characters)
+- `text` (**string**): The text to display in the middle of this label.
 - `h_align` (**integer**): The horizontal alignment of the text inside the label's box (-1: left, 0: center, 1: right)
 - `v_align` (**integer**): The vertical alignment of the text inside the label's box (-1: top, 0: center, 1: bottom)
 - `value_hook` (**string**): This acts as an ID which you can refer to the contents of this label to. Use the `set_hook()` function to update the text in this label.
@@ -240,8 +242,3 @@ If only one argument (a table) is passed to it, then the function will return th
 -- a horizontal line, with an 8px gap in between them
 local list = ui.create_list("x", 8)
 ```
-
-
-
-
-## **Documentation is WIP, but the file has decent function descriptions**

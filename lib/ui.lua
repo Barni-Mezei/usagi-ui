@@ -140,13 +140,14 @@ function M.update_label(item)
     end
 
     -- Update size
-    if item.fix_size then
-        local w, h = usagi.measure_text(item.text)
+    local w, h = usagi.measure_text(item.text)
 
+    item.min_w = w
+    item.min_h = h
+
+    if item.fix_size then
         item.w = w
         item.h = h
-        item.min_w = w
-        item.min_h = h
     end
 
     return item
@@ -390,7 +391,7 @@ local function _size_update_loop(item)
         if item.axis == "x" then
             for _, child in pairs(item.children) do
                 item.w += child.w + child.mx*2 + item.gap
-                item.h = math.max(item.h, child.h)
+                item.h = math.max(item.h, child.h + child.my*2)
             end
 
             item.w -= item.gap
@@ -398,7 +399,7 @@ local function _size_update_loop(item)
 
         if item.axis == "y" then
             for _, child in pairs(item.children) do
-                item.w = math.max(item.w, child.w)
+                item.w = math.max(item.w, child.w + child.mx*2)
                 item.h += child.h + child.my*2 + item.gap
             end
 
