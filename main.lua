@@ -10,7 +10,7 @@ TODO:
 
 - add panel alignment
 - add item alignment in lists
-- fix label text clipping
+- implement fix_size setting for labels as well
 
 ]]
 
@@ -29,6 +29,8 @@ function _init()
 
 	-- Construct the UI panel
 	List1 = ui.create_list("y", 0)
+	List1.w = 128
+	List1.fix_size = true
 
 	for i = 1, 4 do
 		local lst = ui.create_list("x", 32)
@@ -59,9 +61,11 @@ end
 function _update(dt)
 	mx, my = input.mouse()
 
-	--[[for i = 1, 4 do
+	List1.gap = math.floor(usagi.elapsed * 2) % 10
+
+	for i = 1, 4 do
 		ui.set_hook(f("l%d", i), f("Value: %d", math.floor(usagi.elapsed*100/i) ))
-	end]]
+	end
 
 	ui.update(mx, my)
 end
