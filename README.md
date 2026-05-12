@@ -103,6 +103,7 @@ ui.set_panel({
 As you can see, each item has a `type` field. This determines the type of the item. They also have a `children` field. This is waht allows you to place items inside each other.
 
 
+
 # Item descriptions
 
 ## UI.Box
@@ -110,47 +111,135 @@ This is the base of ALL other ui items, therefore **every item has these propert
 
 ### Fields
 - `type` (**string**) The type of this element: "box"
-- `x` (**number**) The X coordinate of the top-left corner of the box
-- `y` (**number**) The Y coordinate of the top-left corner of the box
-- `w` (**number**) The width of the box
-- `h` (**number**) The height of the box
-- `min_w` (**number**) The minimum allowed width of the box
-- `min_h` (**number**) The minimum allowed height of the box
-- `max_w` (**number**) The maximum allowed width of the box
-- `max_h` (**number**) The maximum allowed height of the box
-- `mx` (**number**) The outside margin of the box on the X axis
-- `my` (**number**) The outside margin of the box on the Y axis
-- `fix_size` (**boolean**) Toggles whenever to update the size of this item, relative to it's children
-- `children` (**table**) A list containing child items
+- `x` (**number**) The X coordinate of the top-left corner of this item
+- `y` (**number**) The Y coordinate of the top-left corner of this item
+- `w` (**number**) The width of this item
+- `h` (**number**) The height of this item
+- `min_w` (**number**) The **minimum** allowed width of this item
+- `min_h` (**number**) The **minimum** allowed height of this item
+- `max_w` (**number**) The **maximum** allowed width of this item
+- `max_h` (**number**) The **maximum** allowed height of this item
+- `mx` (**number**) The outside margin of this item on the X axis (So the total width of this item is: `w + mx*2`)
+- `my` (**number**) The outside margin of this item on the Y axis (So the total height of this item is: `h + my*2`)
+- `fix_size` (**boolean**) If set to true, then the size of this item will not be autmatically decided, rather it will stay the same as it was created with.
+- `children` (**table**) A table, containing all child items
 
 ### Methods
-- `add_child(item)`: It has one argument: `item`. When calling this function on a ui item, the supplied other item will be appended at the end of the original item's `children` table.
+- `add_child(item)`: When calling this function on a ui item, the supplied other item will be appended at the end of the original item's `children` table.
+
+
 
 ## UI.Panel
-This is the base of ALL other ui items, therefore **every item has these properties**
+This is a special kind of box, that is a direct "child" of the hidden screen box (a box which covers the whole screen). This allows you to have multiple, separate uis in your game
 
 ### Fields
-- `type` (**string**) The type of this element: "box"
-- `x` (**number**) The X coordinate of the top-left corner of the box
-- `y` (**number**) The Y coordinate of the top-left corner of the box
-- `w` (**number**) The width of the box
-- `h` (**number**) The height of the box
-- `min_w` (**number**) The minimum allowed width of the box
-- `min_h` (**number**) The minimum allowed height of the box
-- `max_w` (**number**) The maximum allowed width of the box
-- `max_h` (**number**) The maximum allowed height of the box
-- `mx` (**number**) The outside margin of the box on the X axis
-- `my` (**number**) The outside margin of the box on the Y axis
-- `fix_size` (**boolean**) Toggles whenever to update the size of this item, relative to it's children
-- `children` (**table**) A list containing child items
 
-### Methods
-- `add_child(item)`: It has one argument: `item`. When calling this function on a ui item, the supplied other item will be appended at the end of the original item's `children` table.
+Same as for `UI.Box`, but it has it's type field set to "panel"
 
 
 
+## UI.Label
+
+This is aessentially is just a box, with a single line of text in it. The position of the textcan be modified (centered, left aligned, top aligned,  etc.)
+
+### Fields
+
+Everything from `UI.Box` and some more:
+
+- `text` (**string**) The text to display inside (must be a single line)
+- `value_hook` (**string**)  A reference to an entry in the `value_hooks` table. Modifying that table, the text in the lael will be updated to the new value
+- `h_align` (**integer**) The horizontal alignment of the text inside the box (-1: left, 0: center, 1: right)
+- `v_align` (**integer**) The vertical alignment of the text inside the box   (-1: top,  0: center, 1: bottom)
 
 
+
+## UI.List
+
+This item allows you to arrange it's children in a line, either horizontally or vertically. You can also specify the `gap` to leave between the elements
+
+### Fields
+
+Everything from `UI.Box` and some more:
+
+- `axis` (**string**) The axis to align items along (can be "x" or "y")
+- `gap` (**number**) The gap between the items in this list
+- `h_align` (**integer**) The horizontal alignment of the items inside the box (-1: left, 0: center, 1: right)
+- `v_align`(**integer**) The vertical alignment of the items inside the box (-1: top,  0: center, 1: bottom)
+
+
+
+# Modul methods
+
+## `create_box()`
+
+### Arguments
+- `x` (**number**): The X coordinate of the box
+- `y` (**number**): The Y coordinate of the box
+- `w` (**number**): The width of the box
+- `h` (**number**): The height of the box
+- `mx` (**number**): The margin of the box on the X axis
+- `my` (**number**): The margin of the box on the Y axis
+
+If only one argument (a table) is passed to it, then the function will return the same box, with all of it's missing fields filled in
+
+### Returns
+- `UI.Box`: A newly created box, which has ALL of it's fields filled in
+
+### Example
+
+```lua
+-- Creates a box which is located at 0;0 and
+-- has a size of 16px by 32px
+local box = ui.create_box(0, 0, 16, 32)
+```
+
+
+
+## `create_label()`
+
+### Arguments
+- `text` (**string**): The text to display in the middle of this label. **The text must be one line!** (So it can not contain `\n` characters)
+- `h_align` (**integer**): The horizontal alignment of the text inside the label's box (-1: left, 0: center, 1: right)
+- `v_align` (**integer**): The vertical alignment of the text inside the label's box (-1: top, 0: center, 1: bottom)
+- `value_hook` (**string**): This acts as an ID which you can refer to the contents of this label to. Use the `set_hook()` function to update the text in this label.
+
+If only one argument (a table) is passed to it, then the function will return the same label, with all of it's missing fields filled in
+
+### Returns
+- `UI.Label`: A newly created label, which has ALL of it's fields filled in
+
+### Example
+
+```lua
+-- Creates a label with the text: "Hello, world!" and a coresponding value
+-- hook, with the id: "label_1"
+local label = ui.create_label("Hello, world!", -1, -1, "label_1")
+
+-- Updates the text in the label to "New text"
+ui.set_hook("label_1", "New text")
+```
+
+
+## `create_list()`
+
+### Arguments
+- `axis` (**string**): The axis on which to align the children of this element
+- `gap` (**number**): The gap to leave between the items
+- `h_align` (**integer**): The horizontal alignment of the items in the list (-1: left, 0: center, 1: right)
+- `v_align` (**integer**): The vertical alignment of the items in the list (-1: top, 0: center, 1: bottom)
+
+If only one argument (a table) is passed to it, then the function will return the same list, with all of it's missing fields filled in
+
+### Returns
+- `UI.List`: A newly created list, which has ALL of it's fields filled in
+
+### Example
+
+```lua
+-- Creates a list, which aligns it's children in
+-- a horizontal line, with an 8px gap in between them
+local list = ui.create_list("x", 8)
+```
 
 
 
