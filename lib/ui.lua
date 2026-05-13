@@ -290,8 +290,8 @@ function M.align_item(box, parent, h_align, v_align)
     if v_align == 0 then y = parent.h/2 - h/2 end
     if v_align == 1 then y = parent.h - h end
 
-    x += mx
-    y += my
+    x = x + mx
+    y = y + my
 
     local out = {
         x = parent.x + x,
@@ -359,20 +359,20 @@ local function _size_update_loop(item)
 
         if item.axis == "x" then
             for _, child in pairs(item.children) do
-                item.w += child.w + child.mx*2 + item.gap
+                item.w = item.w + child.w + child.mx*2 + item.gap
                 item.h = math.max(item.h, child.h + child.my*2)
             end
 
-            item.w -= item.gap
+            item.w = item.w - item.gap
         end
 
         if item.axis == "y" then
             for _, child in pairs(item.children) do
                 item.w = math.max(item.w, child.w + child.mx*2)
-                item.h += child.h + child.my*2 + item.gap
+                item.h = item.h + child.h + child.my*2 + item.gap
             end
 
-            item.h -= item.gap
+            item.h = item.h - item.gap
         end
     end
 
@@ -414,17 +414,14 @@ local function _position_update_loop(item, parent_x, parent_y)
 
         if item.type == "list" then
             if item.axis == "x" then
-                dpx += child.w + child.mx*2 + item.gap
+                dpx = dpx + child.w + child.mx*2 + item.gap
             end
 
             if item.axis == "y" then
-                dpy += child.h + child.my*2 + item.gap
+                dpy = dpy + child.h + child.my*2 + item.gap
             end
         end
     end
-
-    if item.type == "box" then end
-    if item.type == "label" then end
 
     return item
 end
