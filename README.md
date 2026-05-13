@@ -222,6 +222,30 @@ ui.set_hook("label_1", "New text")
 ```
 
 
+
+## `create_list()`
+
+### Arguments
+- `axis` (**string**): The axis on which to align the children of this element
+- `gap` (**number**): The gap to leave between the items
+- `h_align` (**integer**): The horizontal alignment of the items in the list (-1: left, 0: center, 1: right)
+- `v_align` (**integer**): The vertical alignment of the items in the list (-1: top, 0: center, 1: bottom)
+
+If only one argument (a table) is passed to it, then the function will return the same list, with all of it's missing fields filled in
+
+### Returns
+- `UI.List`: A newly created list, which has ALL of it's fields filled in
+
+### Example
+
+```lua
+-- Creates a list, which aligns it's children in
+-- a horizontal line, with an 8px gap in between them
+local list = ui.create_list("x", 8)
+```
+
+
+
 ## `create_list()`
 
 ### Arguments

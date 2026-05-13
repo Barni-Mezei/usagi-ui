@@ -8,9 +8,15 @@ local ui = require("lib.ui")
 --[[
 TODO:
 
+- move label text aligment into _positions_update_loop() and add new firld (text_x, text_y)
+- implement fix_size setting for every element
 - add panel alignment
-- add item alignment in lists
-- implement fix_size setting for labels as well
+
+- add custom rendering function support
+- add images
+- add mouse intersection test
+
+- add element event callbacks (2 params: left -1, 0, 1, right, -1, 0, 1)
 
 ]]
 
@@ -28,19 +34,24 @@ function _init()
 	ui.init()
 
 	-- Construct the UI panel
-	List1 = ui.create_list("y", 0)
-	List1.w = 128
+	List1 = ui.create_list("y", 4)
 	List1.fix_size = true
+	List1.w = 128
+	List1.mx = 16
+	List1.my = 16
 
 	for i = 1, 4 do
-		local lst = ui.create_list("x", 32)
+		local lst = ui.create_list("x", 8)
+		lst.fix_size = true
+		lst.w = 100
+		lst.h = 20
 
-		local l = ui.create_label("", 0, 0, f("l%d", i))
+		local l = ui.create_label("", -1, 0, f("l%d", i))
 		l.w = 64
 		l.h = 16
 		lst.add_child(l)
 
-		local b = ui.create_box(0, 0, 16, 16, 8, 8)
+		local b = ui.create_box(0, 0, 16, 16)
 		lst.add_child(b)
 		List1.add_child(lst)
 	end
@@ -51,20 +62,17 @@ function _init()
 	ui.set_panel(Left_panel, -1, -1)
 	ui.update(mx, my)
 
-	--dump(ui)
-
-	--ui.update(mx, my)
-	--ui.render(true)
+	--dump(List1)
 	--os.exit()
 end
 
 function _update(dt)
 	mx, my = input.mouse()
 
-	List1.gap = math.floor(usagi.elapsed * 2) % 10
+	--List1.gap = math.floor(usagi.elapsed * 2) % 10
 
 	for i = 1, 4 do
-		ui.set_hook(f("l%d", i), f("Value: %d", math.floor(usagi.elapsed*100/i) ))
+		ui.set_hook(f("l%d", i), f("Value: %d", math.floor(usagi.elapsed*100/i) % 900 ))
 	end
 
 	ui.update(mx, my)

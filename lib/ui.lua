@@ -1,15 +1,19 @@
----@diagnostic disable: inject-field, cast-local-type, undefined-field, param-type-mismatch
----@diagnostic disable: return-type-mismatch
+--- The next line is only needed for some of the functions, like `create_label()`. !! Remove while developing !!
+---@diagnostic disable: param-type-mismatch, assign-type-mismatch, return-type-mismatch
 
 ---@class UI
 ---@field screen_box  UI.Box A box covering the whole screen
 ---@field panels      table  A table containing the top level UI items
 ---@field value_hooks table  A table that contains all value hooks and their current value
 local M = {
-    screen_box = {},
+    screen_box = {}, ---@diagnostic disable-line: missing-fields
     panels = {},
     value_hooks = {},
 }
+
+--
+--  UI Item classes
+--
 
 ---@class UI.Box
 --- This is the basis of ALL other ui items! **Every item has these properties**
@@ -27,7 +31,7 @@ local M = {
 ---@field fix_size boolean Toggles whenever to update the size of this item, relative to it's children
 ---@field children table   A list containing child items
 
----@class UI.Label
+---@class UI.Label:UI.Box
 --- Same as UI.Box, but has some additional parameters for text rendering
 ---@field type       string The type of this element: "label"
 ---@field text       string  The text of the label
@@ -35,7 +39,7 @@ local M = {
 ---@field h_align    integer The horizontal alignment of the text inside the box (-1: left, 0: center, 1: right )
 ---@field v_align    integer The vertical alignment of the text inside the box   (-1: top,  0: center, 1: bottom)
 
----@class UI.List
+---@class UI.List:UI.Box
 --- Same as UI.Box, but has some additional parameters for aligning child items
 ---@field type    string  The type of this element: "list"
 ---@field axis    string  The axis to align items along (can be "x" or "y")
@@ -44,6 +48,10 @@ local M = {
 ---@field v_align integer The vertical alignment of the items inside the box   (-1: top,  0: center, 1: bottom)
 
 
+
+--
+--  Item manager methods
+--
 
 ---Creates a box with the given parameters
 ---You can either supply a single partially completed table to this function,
@@ -58,6 +66,7 @@ local M = {
 ---@param my? number       The outside margin of the box on the Y axis
 ---@return UI.Box box      A new box with all of the necessary fields populated
 function M.create_box(x, y, w, h, mx, my)
+    ---@class UI.Box
     local new_box = {
         type = "box",
         children = {},
@@ -97,11 +106,12 @@ end
 
 ---Creates a new label from the provided string
 ---@param text     string|UI.Label The text to create a boundary around or a partially populated table
----@param v_align? integer The vertical alignment of the text inside the box   (-1: top,  0: center, 1: bottom)
 ---@param h_align? integer The horizontal alignment of the text inside the box (-1: left, 0: center, 1: right )
+---@param v_align? integer The vertical alignment of the text inside the box   (-1: top,  0: center, 1: bottom)
 ---@param value_hook? string The hook on which you can modify this label's text
 ---@return UI.Label label  A new box with the size of the provided text
-function M.create_label(text, v_align, h_align, value_hook)
+function M.create_label(text, h_align, v_align, value_hook)
+    ---@class UI.Label
     local new_label = {}
 
     if type(text) == "table" then
@@ -128,10 +138,69 @@ function M.create_label(text, v_align, h_align, value_hook)
     return new_label
 end
 
+---Creates a new list box
+---@param axis     string|UI.List The axis to align items along (can be "x" or "y") or
+---a partially popupated table
+---@param gap?     number  The gap between the items in this list
+---@param h_align? integer The horizontal alignment of the items in the list (-1: left, 0: center, 1: right )
+---@param v_align? integer The vertical alignment of the items in the list   (-1: top,  0: center, 1: bottom)
+---@return UI.List list    A new list container
+function M.create_list(axis, gap, h_align, v_align)
+    ---@class UI.List
+    local new_list = {}
+
+    if type(axis) == "table" then
+        new_list = M.create_box(axis)
+        new_list.axis = axis.axis or "x"
+        new_list.gap = axis.gap or 0
+        new_list.v_align = axis.v_align or 0
+        new_list.h_align = axis.h_align or 0
+    else
+        new_list = M.create_box({}) ---@diagnostic disable-line: missing-fields
+        new_list.axis = axis or "x"
+        new_list.gap = gap or 0
+        new_list.v_align = v_align or 0
+        new_list.h_align = h_align or 0
+    end
+
+    new_list.type = "list"
+    return new_list
+end
+
+---Appends a new panel into the UI
+---@param item UI.Box|UI.Label|UI.List A tree of UI items, which can be partially filled
+---@param h_align? integer The horizontal alignment of this panel rin the screen (-1: left, 0: center, 1: right )
+---@param v_align? integer The vertical alignment of this panel rin the screen   (-1: top,  0: center, 1: bottom)
+function M.set_panel(item, h_align, v_align)
+    local new_panel = {
+        type = "panel",
+        h_align = h_align or -1,
+        v_align = v_align or -1,
+        children = {item},
+    }
+
+    table.insert(M.panels, M.initialise(new_panel))
+end
+
+---Updates the value of a hook
+---@param value_hook string The ID of a value hook
+---@param new_value  string The value to write into the hook
+function M.set_hook(value_hook, new_value)
+    M.value_hooks[value_hook] = new_value
+end
+
+---Returns with a value in a value hook
+---@param value_hook string The ID of a value hook
+---@return string|nil value The value stored at the specified value hook
+function M.get_hook(value_hook)
+    return M.value_hooks[value_hook]
+end
+
+
 ---Updates a label. Should be called after changing the label's text
 ---@param item UI.Label  The label to update
 ---@return UI.Label label The updated label
-function M.update_label(item)
+local function _update_label(item)
     if item.type ~= "label" then return item end
 
     -- Update text from the hook
@@ -151,117 +220,6 @@ function M.update_label(item)
     end
 
     return item
-end
-
----Updates the value of a hook
----@param value_hook string The ID of a value hook
----@param new_value  string The value to write into the hook
-function M.set_hook(value_hook, new_value)
-    M.value_hooks[value_hook] = new_value
-end
-
----Returns with a value in a value hook
----@param value_hook string The ID of a value hook
----@return string|nil value The value stored at the specified value hook
-function M.get_hook(value_hook)
-    return M.value_hooks[value_hook]
-end
-
----Creates a new list box
----@param axis     string|UI.List The axis to align items along (can be "x" or "y") or
----a partially popupated table
----@param gap?     number  The gap between the items in this list
----@param v_align? integer The vertical alignment of the items in the list   (-1: top,  0: center, 1: bottom)
----@param h_align? integer The horizontal alignment of the items in the list (-1: left, 0: center, 1: right )
----@return UI.List list    A new list container
-function M.create_list(axis, gap, h_align, v_align)
-    local new_list = {}
-
-    if type(axis) == "table" then
-        new_list = M.create_box(axis)
-        new_list.axis = axis.axis or "x"
-        new_list.gap = axis.gap or 0
-        new_list.v_align = axis.v_align or 0
-        new_list.h_align = axis.h_align or 0
-    else
-        new_list = M.create_box({})
-        new_list.axis = axis or "x"
-        new_list.gap = gap or 0
-        new_list.v_align = v_align or 0
-        new_list.h_align = h_align or 0
-    end
-
-    new_list.type = "list"
-    return new_list
-end
-
----Aligns a box inside a container box along 2 axis
----@param box    UI.Box|UI.Label The box to align inside the parent 
----@param parent UI.Box|UI.Label The container for the box 
----@param h_align? integer The horizontal alignment of the box (-1: left, 0: center, 1: right )
----@param v_align? integer The vertical alignment of the box   (-1: top,  0: center, 1: bottom)
----@return UI.Box|UI.Label box The box, aligned inside the parent 
-function M.align_item(box, parent, h_align, v_align)
-    local mx = box.mx or 0
-    local my = box.my or 0
-
-    local x = 0
-    local y = 0
-    local w = box.w + mx*2
-    local h = box.h + my*2
-
-    if v_align == 0 then x = parent.w/2 - w/2 end
-    if v_align == 1 then x = parent.w - w end
-
-    if h_align == 0 then y = parent.h/2 - h/2 end
-    if h_align == 1 then y = parent.h - h end
-
-    x += mx
-    y += my
-
-    local out = {
-        x = parent.x + x,
-        y = parent.y + y,
-        w = box.w,
-        h = box.h,
-        mx = mx,
-        my = my,
-    }
-
-    if box.text ~= nil then
-        out.text = box.text
-        out.v_align = box.v_align
-        out.h_align = box.h_align
-    end
-
-    return out
-end
-
----Renders a ui item on the screen
----@param item        table   The UI item to render (can be a box or a label) 
----@param debug_mode? boolean Render box outlines?
-local function _render_item(item, debug_mode)
-
-    -- Render label text
-    if item.text ~= nil then
-        local tw, th = usagi.measure_text(item.text)
-        local tc = M.create_box({w = tw, h = th})
-        tc = M.align_item(tc, item, 0, 0)
-
-        if debug_mode then
-            gfx.rect(tc.x, tc.y, tc.w, tc.h, gfx.COLOR_BLUE)
-        end
-
-        gfx.text(item.text, tc.x, tc.y, gfx.COLOR_WHITE)
-    end
-
-    if item ~= nil and debug_mode then
-        -- Render margin
-        gfx.rect(item.x - item.mx, item.y - item.my, item.w + item.mx*2, item.h + item.my*2, gfx.COLOR_LIGHT_GRAY)
-
-        -- Render item boundary
-        gfx.rect(item.x, item.y, item.w, item.h, gfx.COLOR_RED)
-    end
 end
 
 ---Merges the data from `new` into `original`, but  keeps the children and the type
@@ -297,7 +255,7 @@ function M.initialise(item)
     end
     if item.type == "label" then
         item = _merge_item(item, M.create_label(item))
-        item = M.update_label(item)
+        item = _update_label(item)
     end
     if item.type == "list" then item = _merge_item(item, M.create_list(item)) end
 
@@ -311,38 +269,57 @@ function M.initialise(item)
     return item
 end
 
----Appends a new panel into the UI
----@param item UI.Box|UI.Label|UI.List A tree of UI items, which can be partially filled
----@param h_align? integer The horizontal alignment of this panel rin the screen (-1: left, 0: center, 1: right )
----@param v_align? integer The vertical alignment of this panel rin the screen   (-1: top,  0: center, 1: bottom)
-function M.set_panel(item, h_align, v_align)
-    local new_panel = {
-        type = "panel",
-        h_align = h_align or -1,
-        v_align = v_align or -1,
-        children = {item},
+---Aligns a box inside a container box along 2 axis
+---@param box    UI.Box|UI.Label The box to align inside the parent 
+---@param parent UI.Box|UI.Label The container for the box 
+---@param h_align? integer The horizontal alignment of the box (-1: left, 0: center, 1: right )
+---@param v_align? integer The vertical alignment of the box   (-1: top,  0: center, 1: bottom)
+---@return UI.Box|UI.Label box The box, aligned inside the parent 
+function M.align_item(box, parent, h_align, v_align)
+    local mx = box.mx or 0
+    local my = box.my or 0
+
+    local x = 0
+    local y = 0
+    local w = box.w + mx*2
+    local h = box.h + my*2
+
+    if h_align == 0 then x = parent.w/2 - w/2 end
+    if h_align == 1 then x = parent.w - w end
+
+    if v_align == 0 then y = parent.h/2 - h/2 end
+    if v_align == 1 then y = parent.h - h end
+
+    x += mx
+    y += my
+
+    local out = {
+        x = parent.x + x,
+        y = parent.y + y,
+        w = box.w,
+        h = box.h,
+        mx = mx,
+        my = my,
     }
 
-    table.insert(M.panels, M.initialise(new_panel))
+    if box.text ~= nil then
+        out.text = box.text
+        out.h_align = box.h_align
+        out.v_align = box.v_align
+    end
+
+    return out
 end
 
---
---  Main methods
---
 
-function M.init()
-    -- Create screen box
-    M.screen_box = M.create_box(0, 0, usagi.GAME_W, usagi.GAME_H)
-    M.screen_box.mx = 0
-    M.screen_box.my = 0
-    M.screen_box.min_w = usagi.SPRITE_SIZE
-    M.screen_box.min_h = usagi.SPRITE_SIZE
-    M.screen_box.max_w = usagi.GAME_W
-    M.screen_box.max_h = usagi.GAME_H
 
-    -- Panel continer
-    M.panels = {}
-end
+
+
+
+
+--
+--  Helper functions
+--
 
 local function _render_loop(item, debug_mode)
     local d = debug_mode or false
@@ -354,15 +331,7 @@ local function _render_loop(item, debug_mode)
         end
     end
 
-    _render_item(item, d)
-end
-
-function M.render(debug_mode)
-    for _, panel in pairs(M.panels) do
-        _render_loop(panel, debug_mode)
-    end
-
-    _render_item(M.screen_box, debug_mode)
+    M.render_item(item, d)
 end
 
 local function _size_update_loop(item)
@@ -382,7 +351,7 @@ local function _size_update_loop(item)
     end
 
     if item.type == "label" then
-        item = M.update_label(item)
+        item = _update_label(item)
     end
 
     if item.type == "list" then
@@ -427,6 +396,20 @@ local function _position_update_loop(item, parent_x, parent_y)
     local dpy = py + item.my
 
     for i, child in ipairs(item.children) do
+        if item.type == "list" then
+            if item.axis == "x" then
+                if item.v_align == -1 then dpy = item.y end
+                if item.v_align == 0  then dpy = item.y + item.h/2 - child.h/2 - child.my end
+                if item.v_align == 1  then dpy = item.y + item.h - child.h - child.my*2 end
+            end
+
+            if item.axis == "y" then
+                if item.h_align == -1 then dpx = item.x end
+                if item.h_align == 0  then dpx = item.x + item.w/2 - child.w/2 - child.mx end
+                if item.h_align == 1  then dpx = item.x + item.w - child.w - child.mx*2 end
+            end
+        end
+
         item.children[i] = _position_update_loop(child, dpx, dpy)
 
         if item.type == "list" then
@@ -443,10 +426,82 @@ local function _position_update_loop(item, parent_x, parent_y)
     if item.type == "box" then end
     if item.type == "label" then end
 
-
     return item
 end
 
+
+
+--
+--  Main methods
+--
+
+---Renders a ui item on the screen
+---@param item        table   The UI item to render (can be a box or a label) 
+---@param debug_mode? boolean Render box outlines?
+function M.render_item(item, debug_mode)
+    -- Render label text
+    if item.text ~= nil then
+        local tw, th = usagi.measure_text(item.text)
+        local tc = M.create_box({w = tw, h = th}) ---@diagnostic disable-line: missing-fields
+        tc = M.align_item(tc, item, item.h_align, item.v_align)
+
+        if debug_mode then
+            gfx.rect(tc.x, tc.y, tc.w, tc.h, gfx.COLOR_BLUE)
+        end
+
+        gfx.text(item.text, tc.x, tc.y, gfx.COLOR_WHITE)
+    end
+
+    if item.type == "box" then
+        gfx.rect(item.x, item.y, item.w, item.h, gfx.COLOR_GREEN)
+    end
+
+    if item ~= nil and debug_mode then
+        -- Render margin
+        gfx.rect(item.x - item.mx, item.y - item.my, item.w + item.mx*2, item.h + item.my*2, gfx.COLOR_LIGHT_GRAY)
+
+        -- Render item boundary
+        gfx.rect(item.x, item.y, item.w, item.h, gfx.COLOR_RED)
+    end
+end
+
+---Initialises the UI library. Must be called in `_init()`
+function M.init()
+    -- Create screen box
+    M.screen_box = M.create_box(0, 0, usagi.GAME_W, usagi.GAME_H)
+    M.screen_box.mx = 0
+    M.screen_box.my = 0
+    M.screen_box.min_w = usagi.SPRITE_SIZE
+    M.screen_box.min_h = usagi.SPRITE_SIZE
+    M.screen_box.max_w = usagi.GAME_W
+    M.screen_box.max_h = usagi.GAME_H
+
+    -- Panel continer
+    M.panels = {}
+end
+
+---Renders the UI to the screen. Must be called in `_draw()`
+---@param debug_mode? boolean if this flag is set then the box outlines will be
+---rendered as well. here are the outline colors:
+--- - `red`: The border of the box
+--- - `gray`: The border of the box, including the margin
+--- - `blue`: The border of the text inside of a label
+function M.render(debug_mode)
+    for _, panel in pairs(M.panels) do
+        _render_loop(panel, debug_mode)
+    end
+
+    M.render_item(M.screen_box, debug_mode)
+end
+
+---Updates their UI elements and handles ui events. Must be called in `_update()`
+---@param mouse_x? number The X position of the mouse cursor
+---@param mouse_y? number The You position of the mouse cursor
+---**Example:**
+---```lua
+---local mx, my = input.mouse()
+---ui.update(mx, my)
+---```
 function M.update(mouse_x, mouse_y)
     -- Calculate element sizes
     for _, panel in pairs(M.panels) do
@@ -458,7 +513,5 @@ function M.update(mouse_x, mouse_y)
         _position_update_loop(panel, M.screen_box.x, M.screen_box.y)
     end
 end
-
-
 
 return M
