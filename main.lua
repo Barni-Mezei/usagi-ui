@@ -5,21 +5,6 @@ require("lib.graphics")
 require("lib.misc")
 local ui = require("lib.ui")
 
---[[
-TODO:
-
-- move label text aligment into _positions_update_loop() and add new firld (text_x, text_y)
-- implement fix_size setting for every element
-- add panel alignment
-
-- add custom rendering function support
-- add images
-- add mouse intersection test
-
-- add element event callbacks (2 params: left -1, 0, 1, right, -1, 0, 1)
-
-]]
-
 function _config()
 	return {
 		name = "Simple UI lib",
