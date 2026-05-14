@@ -44,7 +44,7 @@ function _init()
 	Left_panel = List1
 
 	-- Add left panel
-	ui.set_panel(Left_panel, -1, -1)
+	ui.add_panel(Left_panel, -1, -1)
 	ui.update(mx, my)
 
 	--dump(List1)
